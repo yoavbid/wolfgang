@@ -4,8 +4,6 @@ import streamlit as st
 import boto3
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
-os.environ['CACHE_S3_ACCESS_KEY'] = st.secrets["aws_access_key_id"]
-os.environ['CACHE_S3_SECRET_KEY'] = st.secrets["aws_secret_access_key"]
 
 from utils import ask_question, get_chat_chain_and_store
 
@@ -17,7 +15,9 @@ enable_log = True
 
 def write_log_to_s3(log_data, bucket_name, file_name):
     # Create an S3 client
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3',
+                      aws_access_key_id=st.secrets["aws_access_key_id"],
+                      aws_secret_access_key=st.secrets["aws_secret_access_key"])
 
     # Write the log data to a file
     log_file = '\n'.join(log_data)  # Assuming log_data is a list of strings
@@ -29,7 +29,9 @@ def write_log_to_s3(log_data, bucket_name, file_name):
     
 def update_log_on_s3(log_update, bucket_name, file_name):
     # Create an S3 client
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3',
+                      aws_access_key_id=st.secrets["aws_access_key_id"],
+                      aws_secret_access_key=st.secrets["aws_secret_access_key"])
 
     # Retrieve the existing log file from S3
     response = s3.get_object(Bucket=bucket_name, Key=file_name)
