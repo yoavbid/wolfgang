@@ -87,9 +87,6 @@ def show_params():
                       ["gpt-3.5-turbo", "gpt-4"],
                       key="model")
   
-  if LOG_ENABLED and "log_filename" in st.session_state:
-    st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
-  
   return username, recent_level, model
 
 def initialize_chat(model):
@@ -148,6 +145,10 @@ def main():
 
   with chat_col:
     show_chat(username, recent_level, model)
+    
+  with param_col:
+    if LOG_ENABLED and "log_filename" in st.session_state:
+      st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
 
 
 if __name__ == "__main__":
