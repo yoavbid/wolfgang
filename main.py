@@ -4,6 +4,8 @@ import streamlit as st
 import boto3
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
+os.environ['CACHE_S3_ACCESS_KEY'] = st.secrets["aws_access_key_id"]
+os.environ['CACHE_S3_SECRET_KEY'] = st.secrets["aws_secret_access_key"]
 
 from utils import ask_question, get_chat_chain_and_store
 
