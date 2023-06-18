@@ -1,6 +1,7 @@
 import os
 import time
 import streamlit as st
+import boto3
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
 
@@ -10,7 +11,33 @@ from utils import ask_question, get_chat_chain_and_store
 num_contexts = 8
 temperature = 0.4
 prompt_path = "prompt.txt"
-enable_log = False
+enable_log = True
+
+def write_log_to_s3(log_data, bucket_name, file_name):
+    # Create an S3 client
+    s3 = boto3.client('s3')
+
+    # Write the log data to a file
+    log_file = '\n'.join(log_data)  # Assuming log_data is a list of strings
+    log_file += '\n'  # Add a new line at the end
+
+    # Upload the log file to S3
+    s3.put_object(Body=log_file, Bucket=bucket_name, Key=file_name)
+    
+    
+def update_log_on_s3(log_update, bucket_name, file_name):
+    # Create an S3 client
+    s3 = boto3.client('s3')
+
+    # Retrieve the existing log file from S3
+    response = s3.get_object(Bucket=bucket_name, Key=file_name)
+    existing_log = response['Body'].read().decode('utf-8')
+
+    # Make the necessary updates to the log
+    updated_log = existing_log + '\n'.join(log_data) + '\n'
+
+    # Upload the updated log file back to S3
+    s3.put_object(Body=updated_log, Bucket=bucket_name, Key=file_name)
 
 
 def generate_response(prompt, chat, store, history, recent_level=None):
@@ -52,19 +79,16 @@ with chat_col:
     st.session_state["past"] = []
     
     if enable_log:
-      if not os.path.exists("logs"):
-        os.mkdir("logs")
-
-      st.session_state["log_filename"] = "logs/%s.txt" % (
+      st.session_state["log_filename"] = "%s.txt" % (
         time.strftime("%Y%m%d-%H%M%S"), )
 
   user_input = st.text_input("Enter your question here", key="input")
 
   if user_input:
     if not st.session_state["first_input_given"] and enable_log:
-      with open(st.session_state["log_filename"], 'w') as f:
-        f.write("Model: %s\n" % (model, ))
-        f.write("Recent level: %s\n" % (recent_level, ))
+      log_data = ["Model: %s" % (model, )]
+      log_data.append("Recent level: %s" % (recent_level, ))
+      write_log_to_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
       st.session_state["first_input_given"] = True
 
     output = generate_response(user_input, st.session_state["chat"],
@@ -75,9 +99,9 @@ with chat_col:
     st.session_state["generated"].append(output)
 
     if enable_log:
-      with open(st.session_state["log_filename"], "a") as f:
-        f.write("You: " + user_input + "\n")
-        f.write("Wolfgang: " + output + "\n")
+      log_data = ["You: " + user_input]
+      log_data.append("Wolfgang: " + output)
+      update_log_on_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
 
   if st.session_state["generated"]:
     for i in range(len(st.session_state["generated"])):
