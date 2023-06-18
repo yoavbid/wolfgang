@@ -10,6 +10,7 @@ from utils import ask_question, get_chat_chain_and_store
 num_contexts = 8
 temperature = 0.4
 prompt_path = "prompt.txt"
+enable_log = False
 
 
 def generate_response(prompt, chat, store, history, recent_level=None):
@@ -50,11 +51,12 @@ with chat_col:
     st.session_state["generated"] = []
     st.session_state["past"] = []
     
-    if not os.path.exists("logs"):
-      os.mkdir("logs")
+    if enable_log:
+      if not os.path.exists("logs"):
+        os.mkdir("logs")
 
-    st.session_state["log_filename"] = "logs/%s.txt" % (
-      time.strftime("%Y%m%d-%H%M%S"), )
+      st.session_state["log_filename"] = "logs/%s.txt" % (
+        time.strftime("%Y%m%d-%H%M%S"), )
 
   user_input = st.text_input("Enter your question here", key="input")
 
@@ -72,14 +74,16 @@ with chat_col:
     st.session_state["past"].append(user_input)
     st.session_state["generated"].append(output)
 
-    with open(st.session_state["log_filename"], "a") as f:
-      f.write("You: " + user_input + "\n")
-      f.write("Wolfgang: " + output + "\n")
+    if enable_log:
+      with open(st.session_state["log_filename"], "a") as f:
+        f.write("You: " + user_input + "\n")
+        f.write("Wolfgang: " + output + "\n")
 
   if st.session_state["generated"]:
     for i in range(len(st.session_state["generated"])):
       st.write("You: " + st.session_state["past"][i])
       st.write("Wolfgang: " + st.session_state["generated"][i])
 
-with param_col:
-  st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
+if enable_log:
+  with param_col:
+    st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
