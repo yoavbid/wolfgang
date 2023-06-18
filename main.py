@@ -57,7 +57,7 @@ def generate_response(prompt, chat, store, history, recent_level=None):
 
 
 st.set_page_config(layout="wide")
-st.title("Wolfgang")
+st.title("Wolfgang beta")
 param_col, chat_col = st.columns([1, 3])
 
 with param_col:
