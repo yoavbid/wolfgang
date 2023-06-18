@@ -61,9 +61,14 @@ st.title("Wolfgang")
 param_col, chat_col = st.columns([1, 3])
 
 with param_col:
+  username = st.text_input(
+    "Your name",
+    key="user_name",
+    placeholder="default: anonymous")
   recent_level = st.text_input(
     "Most recently played level and course (free text, set before first question)",
-    key="recent_level")
+    key="recent_level",
+    placeholder="e.g. Essentials 3, Mamma Mia")
   model = st.selectbox("Model (set before first question)",
                        ["gpt-3.5-turbo", "gpt-4"],
                        key="model")
@@ -84,14 +89,19 @@ with chat_col:
     st.session_state["generated"] = []
     st.session_state["past"] = []
     
-    if enable_log:
-      st.session_state["log_filename"] = "%s_%s.txt" % (
-        time.strftime("%Y%m%d-%H%M%S"), ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
 
   user_input = st.text_input("Enter your question here", key="input")
 
   if user_input:
     if not st.session_state["first_input_given"] and enable_log:
+      if not username:
+        username = "anonymous"
+        
+      st.session_state["log_filename"] = "%s_%s_%s.txt" % (
+        time.strftime("%Y%m%d-%H%M%S"), 
+        username,
+        ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
+      
       log_data = ["Model: %s" % (model, )]
       log_data.append("Recent level: %s" % (recent_level, ))
       write_log_to_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
@@ -114,6 +124,6 @@ with chat_col:
       st.write("You: " + st.session_state["past"][i])
       st.write("Wolfgang: " + st.session_state["generated"][i])
 
-if enable_log:
+if enable_log and "log_filename" in st.session_state:
   with param_col:
     st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
