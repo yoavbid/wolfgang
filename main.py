@@ -10,10 +10,10 @@ os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
 from utils import ask_question, get_chat_chain_and_store
 
 # params
-num_contexts = 8
-temperature = 0.4
-prompt_path = "prompt.txt"
-enable_log = True
+NUM_CONTEXTS = 8
+TEMPERATURE = 0.4
+PROMPT_PATH = "prompt.txt"
+LOG_ENABLED = True
 
 def write_log_to_s3(log_data, bucket_name, file_name):
     # Create an S3 client
@@ -29,7 +29,7 @@ def write_log_to_s3(log_data, bucket_name, file_name):
     s3.put_object(Body=log_file, Bucket=bucket_name, Key=file_name)
     
     
-def update_log_on_s3(log_update, bucket_name, file_name):
+def update_log_on_s3(log_data, bucket_name, file_name):
     # Create an S3 client
     s3 = boto3.client('s3',
                       aws_access_key_id=st.secrets["aws_access_key_id"],
@@ -44,6 +44,19 @@ def update_log_on_s3(log_update, bucket_name, file_name):
 
     # Upload the updated log file back to S3
     s3.put_object(Body=updated_log, Bucket=bucket_name, Key=file_name)
+    
+def create_log(model, recent_level, username):
+  if not username:
+    username = "anonymous"
+    
+  st.session_state["log_filename"] = "%s_%s_%s.txt" % (
+    time.strftime("%Y%m%d-%H%M%S"), 
+    username,
+    ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
+  
+  log_data = ["Model: %s" % (model, )]
+  log_data.append("Recent level: %s" % (recent_level, ))
+  write_log_to_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
 
 
 def generate_response(prompt, chat, store, history, recent_level=None):
@@ -52,15 +65,16 @@ def generate_response(prompt, chat, store, history, recent_level=None):
                             chat,
                             store,
                             recent_level,
-                            num_contexts=num_contexts)
+                            num_contexts=NUM_CONTEXTS)
   return message
 
 
-st.set_page_config(layout="wide")
-st.title("Wolfgang beta")
-param_col, chat_col = st.columns([1, 3])
-
-with param_col:
+def submit_question():
+    st.session_state.question = st.session_state.input
+    st.session_state.input = ''
+    
+    
+def show_params():
   username = st.text_input(
     "Your name",
     key="user_name",
@@ -70,52 +84,48 @@ with param_col:
     key="recent_level",
     placeholder="e.g. Essentials 3, Mamma Mia")
   model = st.selectbox("Model (set before first question)",
-                       ["gpt-3.5-turbo", "gpt-4"],
-                       key="model")
+                      ["gpt-3.5-turbo", "gpt-4"],
+                      key="model")
+  
+  if LOG_ENABLED and "log_filename" in st.session_state:
+    st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
+  
+  return username, recent_level, model
 
-with chat_col:
+def initialize_chat(model):
+  chat, store = get_chat_chain_and_store(PROMPT_PATH,
+                                        model,
+                                        TEMPERATURE,
+                                        logger=None)
+  st.session_state["chat"] = chat
+  st.session_state["store"] = store
+  st.session_state["history"] = []
+  st.session_state["first_input_given"] = False
+  st.session_state["generated"] = []
+  st.session_state["past"] = []
+  
+
+def show_chat(username, recent_level, model):
   if ("generated" not in st.session_state or "past" not in st.session_state
-      or "chat" not in st.session_state):
-    chat, store = get_chat_chain_and_store(prompt_path,
-                                           model,
-                                           temperature,
-                                           logger=None)
-
-    st.session_state["chat"] = chat
-    st.session_state["store"] = store
-    st.session_state["history"] = []
-    st.session_state["first_input_given"] = False
-
-    st.session_state["generated"] = []
-    st.session_state["past"] = []
-    
-
-  user_input = st.text_input("Enter your question here", key="input")
-
-  if user_input:
-    if not st.session_state["first_input_given"] and enable_log:
-      if not username:
-        username = "anonymous"
-        
-      st.session_state["log_filename"] = "%s_%s_%s.txt" % (
-        time.strftime("%Y%m%d-%H%M%S"), 
-        username,
-        ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
+        or "chat" not in st.session_state):
+    initialize_chat(model)
       
-      log_data = ["Model: %s" % (model, )]
-      log_data.append("Recent level: %s" % (recent_level, ))
-      write_log_to_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
+  st.text_input("Enter your question here", key="input", on_change=submit_question)
+
+  if st.session_state["question"]:
+    if not st.session_state["first_input_given"] and LOG_ENABLED:
+      create_log(model, recent_level, username)
       st.session_state["first_input_given"] = True
 
-    output = generate_response(user_input, st.session_state["chat"],
-                               st.session_state["store"],
-                               st.session_state["history"], recent_level)
+    output = generate_response(st.session_state["question"], st.session_state["chat"],
+                              st.session_state["store"],
+                              st.session_state["history"], recent_level)
 
-    st.session_state["past"].append(user_input)
+    st.session_state["past"].append(st.session_state["question"])
     st.session_state["generated"].append(output)
 
-    if enable_log:
-      log_data = ["You: " + user_input]
+    if LOG_ENABLED:
+      log_data = ["You: " + st.session_state["question"]]
       log_data.append("Wolfgang: " + output)
       update_log_on_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
 
@@ -124,6 +134,21 @@ with chat_col:
       st.write("You: " + st.session_state["past"][i])
       st.write("Wolfgang: " + st.session_state["generated"][i])
 
-if enable_log and "log_filename" in st.session_state:
+
+def main():
+  st.set_page_config(layout="wide")
+  st.title("Wolfgang beta")
+  param_col, chat_col = st.columns([1, 3])
+
+  if 'question' not in st.session_state:
+    st.session_state["question"] = '' 
+
   with param_col:
-    st.markdown("Your log filename: %s" % (st.session_state["log_filename"], ))
+    username, recent_level, model = show_params()
+
+  with chat_col:
+    show_chat(username, recent_level, model)
+
+
+if __name__ == "__main__":
+  main()
