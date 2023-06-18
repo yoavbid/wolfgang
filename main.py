@@ -4,6 +4,7 @@ import streamlit as st
 import string
 import random
 import boto3
+import openai.error
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
 
@@ -14,8 +15,9 @@ NUM_CONTEXTS = 8
 TEMPERATURE = 0.4
 PROMPT_PATH = "prompt.txt"
 LOG_ENABLED = True
+LOG_S3_BUCKET = "wolfgang-tutor-logs"
 
-def write_log_to_s3(log_data, bucket_name, file_name):
+def write_log_to_s3(log_data, file_name):
     # Create an S3 client
     s3 = boto3.client('s3',
                       aws_access_key_id=st.secrets["aws_access_key_id"],
@@ -26,24 +28,24 @@ def write_log_to_s3(log_data, bucket_name, file_name):
     log_file += '\n'  # Add a new line at the end
 
     # Upload the log file to S3
-    s3.put_object(Body=log_file, Bucket=bucket_name, Key=file_name)
+    s3.put_object(Body=log_file, Bucket=LOG_S3_BUCKET, Key=file_name)
     
     
-def update_log_on_s3(log_data, bucket_name, file_name):
+def update_log_on_s3(log_data, file_name):
     # Create an S3 client
     s3 = boto3.client('s3',
                       aws_access_key_id=st.secrets["aws_access_key_id"],
                       aws_secret_access_key=st.secrets["aws_secret_access_key"])
 
     # Retrieve the existing log file from S3
-    response = s3.get_object(Bucket=bucket_name, Key=file_name)
+    response = s3.get_object(Bucket=LOG_S3_BUCKET, Key=file_name)
     existing_log = response['Body'].read().decode('utf-8')
 
     # Make the necessary updates to the log
     updated_log = existing_log + '\n'.join(log_data) + '\n'
 
     # Upload the updated log file back to S3
-    s3.put_object(Body=updated_log, Bucket=bucket_name, Key=file_name)
+    s3.put_object(Body=updated_log, Bucket=LOG_S3_BUCKET, Key=file_name)
     
 def create_log(model, recent_level, username):
   if not username:
@@ -56,16 +58,21 @@ def create_log(model, recent_level, username):
   
   log_data = ["Model: %s" % (model, )]
   log_data.append("Recent level: %s" % (recent_level, ))
-  write_log_to_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
+  write_log_to_s3(log_data, st.session_state["log_filename"])
 
 
 def generate_response(prompt, chat, store, history, recent_level=None):
-  message, _ = ask_question(prompt,
-                            history,
-                            chat,
-                            store,
-                            recent_level,
-                            num_contexts=NUM_CONTEXTS)
+  try:
+    message, _ = ask_question(prompt,
+                              history,
+                              chat,
+                              store,
+                              recent_level,
+                              num_contexts=NUM_CONTEXTS)
+  except openai.error.InvalidRequestError as e:
+    update_log_on_s3(["Encountered OpenAI error: ", str(e)], st.session_state["log_filename"])
+    message = "Sorry. Failed to communicate with my brain. Please start a new session and try again."
+    
   return message
 
 
@@ -124,7 +131,7 @@ def show_chat(username, recent_level, model):
     if LOG_ENABLED:
       log_data = ["You: " + st.session_state["question"]]
       log_data.append("Wolfgang: " + output)
-      update_log_on_s3(log_data, "wolfgang-tutor-logs", st.session_state["log_filename"])
+      update_log_on_s3(log_data, st.session_state["log_filename"])
 
   if st.session_state["generated"]:
     for i in range(len(st.session_state["generated"])):
@@ -134,7 +141,7 @@ def show_chat(username, recent_level, model):
 
 def main():
   st.set_page_config(layout="wide")
-  st.title("Wolfgang beta")
+  st.title("WolfgangGPT beta")
   param_col, chat_col = st.columns([1, 3])
 
   if 'question' not in st.session_state:
