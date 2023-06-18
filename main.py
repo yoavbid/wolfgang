@@ -61,7 +61,7 @@ with chat_col:
   user_input = st.text_input("Enter your question here", key="input")
 
   if user_input:
-    if not st.session_state["first_input_given"]:
+    if not st.session_state["first_input_given"] and enable_log:
       with open(st.session_state["log_filename"], 'w') as f:
         f.write("Model: %s\n" % (model, ))
         f.write("Recent level: %s\n" % (recent_level, ))
