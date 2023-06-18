@@ -1,0 +1,4 @@
+Model: gpt-3.5-turbo
+Recent level: 
+You: where is middle c?
+Wolfgang: Middle C is the white key to the left of the group of two black keys in the middle of your piano.

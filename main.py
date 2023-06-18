@@ -49,6 +49,9 @@ with chat_col:
 
     st.session_state["generated"] = []
     st.session_state["past"] = []
+    
+    if not os.path.exists("logs"):
+      os.mkdir("logs")
 
     st.session_state["log_filename"] = "logs/%s.txt" % (
       time.strftime("%Y%m%d-%H%M%S"), )

@@ -1,0 +1,4 @@
+Model: gpt-3.5-turbo
+Recent level: 
+You: skldjklas
+Wolfgang: I'm sorry, I didn't understand your request. Can you please try rephrasing or asking a specific question about the Simply Piano app?
