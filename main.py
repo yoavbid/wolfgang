@@ -1,6 +1,8 @@
 import os
 import time
 import streamlit as st
+import string
+import random
 import boto3
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
@@ -83,8 +85,8 @@ with chat_col:
     st.session_state["past"] = []
     
     if enable_log:
-      st.session_state["log_filename"] = "%s.txt" % (
-        time.strftime("%Y%m%d-%H%M%S"), )
+      st.session_state["log_filename"] = "%s_%s.txt" % (
+        time.strftime("%Y%m%d-%H%M%S"), ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
 
   user_input = st.text_input("Enter your question here", key="input")
 
