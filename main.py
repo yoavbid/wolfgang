@@ -5,6 +5,7 @@ import string
 import random
 import boto3
 import openai.error
+import openai
 
 os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
 
@@ -140,8 +141,9 @@ def show_chat(username, recent_level, model):
 
 
 def main():
+  openai.api_key = st.secrets["api_secret"]
   st.set_page_config(layout="wide")
-  st.title("WolfgangGPT beta (temporarily down for maintenance)  " + os.environ['OPENAI_API_KEY'][:5])
+  st.title("WolfgangGPT beta (temporarily down for maintenance)")
   param_col, chat_col = st.columns([1, 3])
 
   if 'question' not in st.session_state:
