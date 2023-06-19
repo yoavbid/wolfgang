@@ -139,7 +139,10 @@ def show_chat(username, recent_level, model):
 
 
 def main():
+  # set API key in two ways to support both local and remote execution
+  os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
   openai.api_key = st.secrets["api_secret"]
+  
   st.set_page_config(layout="wide")
   st.title("WolfgangGPT beta")
   param_col, chat_col = st.columns([1, 3])
