@@ -91,7 +91,7 @@ def show_params():
     key="recent_level",
     placeholder="e.g. Essentials 3, Mamma Mia")
   model = st.selectbox("Model (set before first question)",
-                      ["gpt-3.5-turbo", "gpt-4"],
+                      ["gpt-4", "gpt-3.5-turbo"],
                       key="model")
   
   return username, recent_level, model
