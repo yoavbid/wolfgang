@@ -141,7 +141,7 @@ def show_chat(username, recent_level, model):
 
 def main():
   st.set_page_config(layout="wide")
-  st.title("WolfgangGPT beta (temporarily down for maintenance)")
+  st.title("WolfgangGPT beta (temporarily down for maintenance)  " + os.environ['OPENAI_API_KEY'][:5])
   param_col, chat_col = st.columns([1, 3])
 
   if 'question' not in st.session_state:
