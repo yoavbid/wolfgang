@@ -6,7 +6,6 @@ import random
 import boto3
 import openai.error
 
-os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
 
 from utils import ask_question, get_chat_chain_and_store
 
@@ -140,6 +139,8 @@ def show_chat(username, recent_level, model):
 
 
 def main():
+  os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
+  
   st.set_page_config(layout="wide")
   st.title("WolfgangGPT beta")
   param_col, chat_col = st.columns([1, 3])
