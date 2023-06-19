@@ -7,8 +7,6 @@ import boto3
 import openai.error
 import openai
 
-os.environ['OPENAI_API_KEY'] = st.secrets["api_secret"]
-
 from utils import ask_question, get_chat_chain_and_store
 
 # params
@@ -92,7 +90,7 @@ def show_params():
     key="recent_level",
     placeholder="e.g. Essentials 3, Mamma Mia")
   model = st.selectbox("Model (set before first question)",
-                      ["gpt-3.5-turbo", "gpt-4"],
+                      ["gpt-4", "gpt-3.5-turbo"],
                       key="model")
   
   return username, recent_level, model
@@ -143,7 +141,7 @@ def show_chat(username, recent_level, model):
 def main():
   openai.api_key = st.secrets["api_secret"]
   st.set_page_config(layout="wide")
-  st.title("WolfgangGPT beta (temporarily down for maintenance)")
+  st.title("WolfgangGPT beta")
   param_col, chat_col = st.columns([1, 3])
 
   if 'question' not in st.session_state:
