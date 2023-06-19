@@ -140,6 +140,7 @@ def show_chat(username, recent_level, model):
 
 
 def main():
+  print(os.environ['OPENAI_API_KEY'][:10])
   st.set_page_config(layout="wide")
   st.title("WolfgangGPT beta")
   param_col, chat_col = st.columns([1, 3])
