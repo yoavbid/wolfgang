@@ -31,7 +31,7 @@ def generate_similarity_index():
     store.save_local(simply_tutor_path / "faiss_index")
     
 def load_similarity_index():
-    store = FAISS.load_local(simply_tutor_path / "faiss_index", OpenAIEmbeddings())
+    store = FAISS.load_local("faiss_index", OpenAIEmbeddings())
         
     return store
 
