@@ -3,7 +3,6 @@ import pickle
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
-from simply_tutor.src import simply_tutor_path
 from langchain.document_loaders import TextLoader
 
 
