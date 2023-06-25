@@ -20,9 +20,12 @@ def get_chat_chain_and_store(prompt_path, model = 'gpt-3.5-turbo', temperature=0
         promptTemplate = f.read()
 
         system_message_prompt = SystemMessagePromptTemplate.from_template(
-            template=promptTemplate, input_variables=["history", "context", "recent_level", "input"])
+            template=promptTemplate, input_variables=["history", "context", "recent_level"])
+        
+    human_template = "{input}"
+    human_message_prompt = SystemMessagePromptTemplate.from_template(human_template)
 
-    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt])
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
 
     chat = ChatOpenAI(temperature=temperature, model=model)
 
