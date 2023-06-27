@@ -7,7 +7,7 @@ import boto3
 import openai.error
 import openai
 
-from utils import ask_question, get_chat_chain_and_store
+from wolfgang import Wolfgang
 
 # params
 NUM_CONTEXTS = 8
@@ -60,14 +60,9 @@ def create_log(model, recent_level, username):
   write_log_to_s3(log_data, st.session_state["log_filename"])
 
 
-def generate_response(prompt, chat, store, history, recent_level=None):
+def generate_response(prompt, wolfgang):
   try:
-    message, _ = ask_question(prompt,
-                              history,
-                              chat,
-                              store,
-                              recent_level,
-                              num_contexts=NUM_CONTEXTS)
+    message, _ = wolfgang.ask_question(prompt)
   except openai.error.InvalidRequestError as e:
     update_log_on_s3(["Encountered OpenAI error: ", str(e)], st.session_state["log_filename"])
     message = "Sorry. Failed to communicate with my brain. Please start a new session and try again."
@@ -95,14 +90,10 @@ def show_params():
   
   return username, recent_level, model
 
-def initialize_chat(model):
-  chat, store = get_chat_chain_and_store(PROMPT_PATH,
-                                        model,
-                                        TEMPERATURE,
-                                        logger=None)
-  st.session_state["chat"] = chat
-  st.session_state["store"] = store
-  st.session_state["history"] = []
+def initialize_chat(model, recent_level):
+  st.session_state["wolfgang"] = Wolfgang(PROMPT_PATH, "./faiss_index", model, TEMPERATURE,
+                                          NUM_CONTEXTS, {"recent_level": st.session_state["recent_level"]},
+                                          logger=None)
   st.session_state["first_input_given"] = False
   st.session_state["generated"] = []
   st.session_state["past"] = []
@@ -110,8 +101,8 @@ def initialize_chat(model):
 
 def show_chat(username, recent_level, model):
   if ("generated" not in st.session_state or "past" not in st.session_state
-        or "chat" not in st.session_state):
-    initialize_chat(model)
+        or "wolfgang" not in st.session_state):
+    initialize_chat(model, recent_level)
       
   st.text_input("Enter your question here", key="input", on_change=submit_question)
 
@@ -120,9 +111,7 @@ def show_chat(username, recent_level, model):
       create_log(model, recent_level, username)
       st.session_state["first_input_given"] = True
 
-    output = generate_response(st.session_state["question"], st.session_state["chat"],
-                              st.session_state["store"],
-                              st.session_state["history"], recent_level)
+    output = generate_response(st.session_state["question"], st.session_state["wolfgang"])
 
     st.session_state["past"].append(st.session_state["question"])
     st.session_state["generated"].append(output)

@@ -3,13 +3,13 @@ import pickle
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
+from simply_tutor.src import simply_tutor_path
 from langchain.document_loaders import TextLoader
 
 
-
-def generate_similarity_index():
-    data_files_list= list((simply_tutor_path / "training_data/").glob("**/*.srt"))
-    data_files_list.extend(list((simply_tutor_path / "training_data/").glob("**/*.txt")))
+def generate_similarity_index(data_path, index_path):
+    data_files_list= list((data_path).glob("**/*.srt"))
+    data_files_list.extend(list((data_path).glob("**/*.txt")))
 
     documents = []
     for data_file in data_files_list:
@@ -21,28 +21,17 @@ def generate_similarity_index():
     docs = textSplitter.split_documents(documents)
 
     store = FAISS.from_documents(docs, OpenAIEmbeddings())
-    # faiss.write_index(store.index, str(simply_tutor_path / "training_data" / "app_context.index"))
-    
-    # docs = store.similarity_search("middle c")
-
-    # with open(simply_tutor_path / "training_data" / "faiss.pkl", "wb") as f:
-    #     pickle.dump(store, f)
         
-    store.save_local(simply_tutor_path / "faiss_index")
+    store.save_local(index_path)
     
-def load_similarity_index():
-    store = FAISS.load_local("faiss_index", OpenAIEmbeddings())
+def load_similarity_index(index_path):
+    store = FAISS.load_local(index_path, OpenAIEmbeddings())
         
     return store
 
 
-def test_similarity_index(text):
-    index = faiss.read_index(str(simply_tutor_path / "training_data" / "app_context.index"))
-
-    with open(simply_tutor_path / "training_data" / "faiss.pkl", "rb") as f:
-        store = pickle.load(f)
-
-    store.index = index
+def test_similarity_index(text, index_path):
+    store = load_similarity_index(index_path)
 
     docs = store.similarity_search(text, k=3) #similarity_search(text)
     for i, doc in enumerate(docs):
@@ -50,9 +39,10 @@ def test_similarity_index(text):
         
         
 def main():
-    generate_similarity_index()
+    generate_similarity_index(data_path=simply_tutor_path / "training_data/",
+                              index_path=simply_tutor_path / "faiss_index")
     
-    test_similarity_index('What other songs can I practice after Somewhere Over the Rainbow?')
+    test_similarity_index('lean on me', index_path=simply_tutor_path / "faiss_index")
     
         
 if __name__ == "__main__":
