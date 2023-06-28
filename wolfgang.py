@@ -54,8 +54,6 @@ class Wolfgang():
                 contexts.append(f"Context {i}:\n{doc.page_content}")
                 contexts_no_index.append(doc.page_content)
         
-        return "I have no idea!!!", []
-        
         answer = self.chain.run(input=question, context="\n\n".join(contexts), 
                                 recent_level=self.recent_level, history=self.history)
         
