@@ -1,4 +1,3 @@
-from simply_tutor.src.similarity import load_similarity_index
 from langchain import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
@@ -7,7 +6,7 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 from utils import get_default_logger
-
+from similarity import load_similarity_index
 
 class Wolfgang():
     def __init__(self, prompt_path, index_path, model = 'gpt-3.5-turbo', temperature=0.4, 
@@ -46,14 +45,17 @@ class Wolfgang():
         search_text = question + ' history: ' + ' '.join(history_for_context)
         if self.recent_level is not None:
             search_text += ' context: ' + self.recent_level
-            
-        docs = self.store.similarity_search(search_text, k=self.num_contexts)
+        
         contexts = []
         contexts_no_index = []
-        for i, doc in enumerate(docs):
-            contexts.append(f"Context {i}:\n{doc.page_content}")
-            contexts_no_index.append(doc.page_content)
-
+        if self.num_contexts > 0:
+            docs = self.store.similarity_search(search_text, k=self.num_contexts)
+            for i, doc in enumerate(docs):
+                contexts.append(f"Context {i}:\n{doc.page_content}")
+                contexts_no_index.append(doc.page_content)
+        
+        return "I have no idea!!!", []
+        
         answer = self.chain.run(input=question, context="\n\n".join(contexts), 
                                 recent_level=self.recent_level, history=self.history)
         

@@ -1,9 +1,6 @@
-import faiss
-import pickle
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
-from simply_tutor.src import simply_tutor_path
 from langchain.document_loaders import TextLoader
 
 
@@ -39,6 +36,7 @@ def test_similarity_index(text, index_path):
         
         
 def main():
+    from simply_tutor.src import simply_tutor_path
     generate_similarity_index(data_path=simply_tutor_path / "training_data/",
                               index_path=simply_tutor_path / "faiss_index")
     
